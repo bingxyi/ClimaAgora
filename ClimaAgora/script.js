@@ -1,51 +1,53 @@
 const apiKey = "dde23291486636c3e7603ac66a60845e"; // API Key da OpenWeather
 
-// Elementos DOM
-const cityInput = document.getElementById('cityInput');
-const cityName = document.getElementById('cityName');
-const currentDate = document.getElementById('currentDate');
-const weatherIcon = document.getElementById('weatherIcon');
-const temperature = document.getElementById('temperature');
-const feelsLike = document.getElementById('feelsLike');
-const description = document.getElementById('description');
-const humidity = document.getElementById('humidity');
-const wind = document.getElementById('wind');
-const precipitation = document.getElementById('precipitation');
-const uvIndex = document.getElementById('uvIndex');
-const sunrise = document.getElementById('sunrise');
-const sunset = document.getElementById('sunset');
-const weatherResult = document.getElementById('weatherResult');
-const forecast = document.getElementById('forecast');
-const forecastCards = document.getElementById('forecastCards');
-const locationBtn = document.getElementById('locationBtn');
-const toggleThemeBtn = document.getElementById('toggleTheme');
+// Seletores dos elementos DOM
+const cityInput = document.getElementById('cityInput'); // Campo de input da cidade
+const cityName = document.getElementById('cityName');   // Elemento que exibe o nome da cidade
+const currentDate = document.getElementById('currentDate'); // Elemento da data atual
+const weatherIcon = document.getElementById('weatherIcon'); // Ícone do clima
+const temperature = document.getElementById('temperature'); // Temperatura atual
+const feelsLike = document.getElementById('feelsLike');     // Sensação térmica
+const description = document.getElementById('description'); // Descrição do clima
+const humidity = document.getElementById('humidity');       // Umidade
+const wind = document.getElementById('wind');               // Velocidade do vento
+const precipitation = document.getElementById('precipitation'); // Precipitação
+const uvIndex = document.getElementById('uvIndex');          // Índice UV
+const sunrise = document.getElementById('sunrise');          // Nascer do sol
+const sunset = document.getElementById('sunset');            // Pôr do sol
+const weatherResult = document.getElementById('weatherResult'); // Container dos resultados
+const forecast = document.getElementById('forecast');         // Previsão para os próximos dias
+const forecastCards = document.getElementById('forecastCards'); // Cards da previsão
+const locationBtn = document.getElementById('locationBtn');    // Botão de localização
+const toggleThemeBtn = document.getElementById('toggleTheme'); // Botão de tema escuro/claro
 
-// Botão de tema escuro
+// Alternar entre tema escuro e claro
 toggleThemeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark-theme');
-
+    document.body.classList.toggle('dark-theme'); // Adiciona/remove a classe 'dark-theme'
+    
+    // Verifica se o tema escuro está ativo e atualiza o texto do botão
     const isDark = document.body.classList.contains('dark-theme');
     toggleThemeBtn.innerHTML = isDark 
         ? '<i class="fas fa-sun"></i> Tema Claro' 
         : '<i class="fas fa-moon"></i> Tema Escuro';
 });
 
-// Formatar data
+// Formata um timestamp UNIX para uma data legível em português
 function formatDate(timestamp) {
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleDateString('pt-BR', { 
-        weekday: 'long', 
-        day: '2-digit', 
-        month: 'long',
-        hour: '2-digit',
-        minute: '2-digit'
+    const date = new Date(timestamp * 1000); // Converte segundos em milissegundos
+    return date.toLocaleDateString('pt-BR', { // Formata para o padrão brasileiro
+        weekday: 'long',  // Ex: "segunda-feira"
+        day: '2-digit',   // Dia com dois dígitos (ex: "05")
+        month: 'long',    // Mês por extenso (ex: "janeiro")
+        hour: '2-digit',  // Hora (ex: "14")
+        minute: '2-digit' // Minutos (ex: "30")
     });
 }
 
+// Formata o horário do nascer/pôr do sol considerando o fuso horário local
 function formatTime(timestamp, timezoneOffset) {
-    const localTimestamp = (timestamp + timezoneOffset); // segundos
-    const utcDate = new Date(localTimestamp * 1000); // converte para ms
-    return utcDate.toUTCString().match(/\d{2}:\d{2}/)[0]; // extrai HH:MM
+    const localTimestamp = (timestamp + timezoneOffset); // Ajusta para o fuso horário
+    const utcDate = new Date(localTimestamp * 1000); // Converte para objeto Date
+    return utcDate.toUTCString().match(/\d{2}:\d{2}/)[0]; // Extrai apenas "HH:MM"
 }
 
 // Atualizar informações de localização
@@ -83,39 +85,42 @@ function updateWeatherDetails(data) {
     sunset.textContent = formatTime(data.sys.sunset, data.timezone);
 }
 
+// Atualiza a exibição do índice UV com cores baseadas na intensidade
 function updateUVIndex(uvi) {
-    uvIndex.textContent = uvi;
+    uvIndex.textContent = uvi; // Exibe o valor do índice UV
     
     const uvCard = document.querySelector('.uv-card');
     const icon = uvCard.querySelector('i');
     
+    // Remove classes anteriores para evitar conflitos
     uvCard.classList.remove('low', 'moderate', 'high', 'extreme');
     
+    // Classifica o índice UV e aplica estilos correspondentes
     if (uvi <= 2) {
-        uvCard.classList.add('low');
+        uvCard.classList.add('low'); // Verde (baixo)
         icon.style.color = getComputedStyle(document.documentElement).getPropertyValue('--success-color');
     } else if (uvi <= 5) {
-        uvCard.classList.add('moderate');
+        uvCard.classList.add('moderate'); // Amarelo (moderado)
         icon.style.color = getComputedStyle(document.documentElement).getPropertyValue('--warning-color');
     } else if (uvi <= 7) {
-        uvCard.classList.add('high');
+        uvCard.classList.add('high'); // Vermelho (alto)
         icon.style.color = getComputedStyle(document.documentElement).getPropertyValue('--danger-color');
     } else {
-        uvCard.classList.add('extreme');
+        uvCard.classList.add('extreme'); // Roxo (extremo)
         icon.style.color = '#9C003C';
     }
 }
 
-// Buscar índice UV separadamente (requer coordenadas)
+// Busca o índice UV usando latitude e longitude
 async function fetchUVIndex(lat, lon) {
     try {
         const uvUrl = `https://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${apiKey}`;
         const response = await fetch(uvUrl);
         const uvData = await response.json();
-        updateUVIndex(uvData.value.toFixed(1));
+        updateUVIndex(uvData.value.toFixed(1)); // Arredonda para 1 casa decimal
     } catch (error) {
         console.error("Erro ao buscar índice UV:", error);
-        uvIndex.textContent = "N/D";
+        uvIndex.textContent = "N/D"; // Exibe "N/D" em caso de erro
     }
 }
 
